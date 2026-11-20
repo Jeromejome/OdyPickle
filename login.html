@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f6f2">
+    <title>Sign in — OdyZPickle</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" defer></script>
+    <script src="config.js" defer></script>
+    <script src="session.js" defer></script>
+    <script src="login.js" defer></script>
+  </head>
+  <body class="auth-page">
+    <main class="auth-shell">
+      <a class="brand auth-brand" href="login.html" aria-label="OdyZPickle">
+        <span class="wordmark wordmark-large" aria-hidden="true">Ody<span class="wordmark-z">Z</span>Pickle</span>
+      </a>
+
+      <section class="panel auth-card" aria-labelledby="auth-title">
+        <p class="eyebrow" id="auth-eyebrow">WELCOME BACK</p>
+        <h1 id="auth-title" class="auth-title">Sign in to your club<span class="heading-period">.</span></h1>
+        <p class="auth-subtitle" id="auth-subtitle">Use the login OdyZPickle gave your club.</p>
+
+        <form id="auth-form" class="auth-form" novalidate>
+          <label class="field">
+            <span class="field-label">Email</span>
+            <input id="auth-email" class="field-input" type="email" autocomplete="email" required>
+          </label>
+          <label class="field" id="password-field">
+            <span class="field-label">Password</span>
+            <input id="auth-password" class="field-input" type="password" autocomplete="current-password" minlength="6" required>
+          </label>
+          <button id="auth-submit" class="button button-primary auth-submit" type="submit">Sign in</button>
+        </form>
+
+        <p id="auth-feedback" class="form-feedback auth-feedback" aria-live="polite"></p>
+
+        <div class="auth-switches">
+          <button id="toggle-mode" class="link-button" type="button">New here? Create an account</button>
+          <button id="forgot-password" class="link-button" type="button">Forgot password?</button>
+        </div>
+
+        <div id="no-club" class="auth-no-club" hidden>
+          <strong>Your account isn’t linked to a club yet.</strong>
+          <span>Ask OdyZPickle to add <b id="no-club-email"></b> to your club, then sign in again.</span>
+          <button id="no-club-signout" class="button button-dark" type="button">Sign out</button>
+        </div>
+      </section>
+      <a class="developed-by" href="https://odyzee.site/" target="_blank" rel="noopener noreferrer" aria-label="Developed by OdyZee (opens odyzee.site)">
+        <span>Developed by:</span>
+        <span class="odyzee-badge">Ody<span class="odyzee-z">Z</span>ee</span>
+      </a>
+    </main>
+  </body>
+</html>

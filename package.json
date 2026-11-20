@@ -1,0 +1,10 @@
+{
+  "name": "odyzpickle",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/server": "^1.9.2"
+  }
+}

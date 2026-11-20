@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f6f2">
+    <title>Owner Dashboard — OdyZPickle</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" defer></script>
+    <script src="config.js" defer></script>
+    <script src="session.js" defer></script>
+    <script src="owner.js" defer></script>
+  </head>
+  <body class="is-booting">
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="owner.html" aria-label="Owner dashboard home">
+          <span class="wordmark" aria-hidden="true">Ody<span class="wordmark-z">Z</span>Pickle</span>
+          <span class="wordmark-tag">OWNER</span>
+        </a>
+        <div class="topbar-meta">
+          <span class="user-email" id="user-email"></span>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <button class="link-button" id="sign-out" type="button">Sign out</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">EVERY CLUB, ONE PLACE</p>
+            <h1 id="page-title">Owner dashboard<span class="heading-period">.</span></h1>
+            <p class="page-subtitle">Add clubs, manage who can sign in, and keep subscriptions current.</p>
+          </div>
+          <div class="heading-decoration" aria-hidden="true">
+            <span class="decoration-line"></span>
+            <span class="decoration-ball"></span>
+          </div>
+        </section>
+
+        <div id="owner-notice" class="storage-notice" role="alert" hidden></div>
+
+        <section class="stats-grid stats-grid-4" aria-label="Business stats">
+          <article class="stat-card">
+            <div class="stat-top"><span class="stat-label">CLUBS</span><span class="stat-icon icon-players" aria-hidden="true">↗</span></div>
+            <div class="stat-value" id="stat-clubs">0</div>
+            <div class="stat-note" id="stat-clubs-note">on OdyZPickle</div>
+          </article>
+          <article class="stat-card stat-card-highlight">
+            <div class="stat-top"><span class="stat-label">PAYING</span><span class="stat-icon icon-matches" aria-hidden="true">✳</span></div>
+            <div class="stat-value" id="stat-active">0</div>
+            <div class="stat-note">active subscriptions</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-top"><span class="stat-label">ON TRIAL</span><span class="stat-icon icon-rounds" aria-hidden="true">↻</span></div>
+            <div class="stat-value" id="stat-trial">0</div>
+            <div class="stat-note">ready to convert</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-top"><span class="stat-label">NEEDS ATTENTION</span><span class="stat-icon icon-attention" aria-hidden="true">!</span></div>
+            <div class="stat-value" id="stat-attention">0</div>
+            <div class="stat-note">expired, suspended or ending in 7 days</div>
+          </article>
+        </section>
+
+        <div class="owner-grid">
+          <section class="panel clubs-panel" aria-labelledby="clubs-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">YOUR CUSTOMERS</p>
+                <h2 id="clubs-title">Clubs <span class="roster-count" id="clubs-count">0</span></h2>
+              </div>
+              <button class="link-button" id="refresh" type="button">↻ Refresh</button>
+            </div>
+
+            <div class="clubs-toolbar">
+              <div class="input-wrap search-wrap">
+                <span class="input-plus" aria-hidden="true">⌕</span>
+                <label class="sr-only" for="club-search">Search clubs</label>
+                <input id="club-search" type="search" placeholder="Search by club or admin email" autocomplete="off">
+              </div>
+              <div class="filter-chips" role="group" aria-label="Filter clubs by status">
+                <button class="filter-chip selected" type="button" data-filter="all" aria-pressed="true">All</button>
+                <button class="filter-chip" type="button" data-filter="active" aria-pressed="false">Active</button>
+                <button class="filter-chip" type="button" data-filter="trial" aria-pressed="false">Trial</button>
+                <button class="filter-chip" type="button" data-filter="attention" aria-pressed="false">Attention</button>
+              </div>
+            </div>
+
+            <div class="clubs-table" role="table" aria-label="Clubs">
+              <div class="clubs-row clubs-head" role="row">
+                <span role="columnheader">CLUB</span>
+                <span role="columnheader">STATUS</span>
+                <span role="columnheader">ACCESS UNTIL</span>
+                <span role="columnheader">PLAYERS</span>
+                <span role="columnheader">LAST ACTIVE</span>
+                <span role="columnheader"><span class="sr-only">Actions</span></span>
+              </div>
+              <div id="clubs-body" role="rowgroup"></div>
+            </div>
+            <div id="clubs-empty" class="history-empty" hidden></div>
+          </section>
+
+          <aside class="panel roster-panel" aria-labelledby="add-club-title">
+            <div class="panel-heading roster-heading">
+              <div>
+                <p class="eyebrow">NEW CUSTOMER</p>
+                <h2 id="add-club-title">Add a club</h2>
+              </div>
+              <span class="roster-spark" aria-hidden="true">✳</span>
+            </div>
+            <p class="panel-intro">Create the club’s login here. Share the email and password with the club — they sign in and land straight on their own board.</p>
+            <form id="add-club-form" class="stack-form" novalidate>
+              <label class="field">
+                <span class="field-label">Club name</span>
+                <input id="new-club-name" class="field-input" type="text" maxlength="80" required placeholder="Sunset Pickleball Club">
+              </label>
+              <div class="field">
+                <span class="field-label">Club logo <small class="optional">optional · PNG, JPG or WebP</small></span>
+                <label class="file-pick">
+                  <input id="new-club-logo" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only">
+                  <span class="file-pick-button">Choose logo</span>
+                  <span class="file-pick-name" id="new-club-logo-name">No file chosen</span>
+                </label>
+              </div>
+              <label class="field">
+                <span class="field-label">Club login email</span>
+                <input id="new-club-email" class="field-input" type="email" placeholder="captain@club.com" autocomplete="off" required>
+              </label>
+              <label class="field">
+                <span class="field-label">Club login password</span>
+                <span class="password-wrap">
+                  <input id="new-club-password" class="field-input" type="text" minlength="6" autocomplete="new-password" spellcheck="false" required>
+                  <button class="link-button" type="button" id="generate-password">Generate</button>
+                </span>
+              </label>
+              <div class="field-row">
+                <label class="field">
+                  <span class="field-label">Status</span>
+                  <select id="new-club-status" class="field-input">
+                    <option value="trial">Trial</option>
+                    <option value="active">Active (paid)</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span class="field-label">Access until</span>
+                  <input id="new-club-until" class="field-input" type="date">
+                </label>
+              </div>
+              <button class="button button-dark" type="submit">Add club</button>
+            </form>
+            <p id="add-club-feedback" class="form-feedback" aria-live="polite"></p>
+            <div class="roster-tip"><span aria-hidden="true">✦</span> Clubs past their access date, or suspended, can still view their board but can’t record changes.</div>
+          </aside>
+        </div>
+
+        <footer class="page-footer">
+          <span>GOOD GAMES. GOOD BUSINESS.</span>
+          <span>ODYZPICKLE <span class="footer-ball" aria-hidden="true">●</span></span>
+        </footer>
+        <a class="developed-by" href="https://odyzee.site/" target="_blank" rel="noopener noreferrer" aria-label="Developed by OdyZee (opens odyzee.site)">
+          <span>Developed by:</span>
+          <span class="odyzee-badge">Ody<span class="odyzee-z">Z</span>ee</span>
+        </a>
+      </main>
+    </div>
+
+    <!-- Styled pop-up for confirmations and quick questions (replaces the browser's plain boxes). -->
+    <dialog id="ask-dialog" class="club-dialog confirm-dialog" aria-labelledby="ask-title" aria-describedby="ask-message">
+      <form id="ask-form" class="dialog-body" novalidate>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" id="ask-eyebrow"></p>
+            <h2 id="ask-title"></h2>
+          </div>
+          <button class="dialog-close" type="button" id="ask-close" aria-label="Cancel">×</button>
+        </div>
+        <p id="ask-message" class="ask-message"></p>
+        <label class="field" id="ask-field" hidden>
+          <span class="field-label" id="ask-label"></span>
+          <span class="ask-input-wrap">
+            <input id="ask-input" class="field-input" type="text" autocomplete="off" spellcheck="false">
+            <span class="ask-input-tools">
+              <button class="link-button" type="button" id="ask-toggle" hidden>Hide</button>
+              <button class="link-button" type="button" id="ask-generate" hidden>Generate</button>
+            </span>
+          </span>
+        </label>
+        <p id="ask-feedback" class="form-feedback error" aria-live="polite"></p>
+        <div class="dialog-footer confirm-footer">
+          <button class="link-button" type="button" id="ask-cancel">Cancel</button>
+          <button class="button button-danger" type="submit" id="ask-ok">OK</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="club-dialog" class="club-dialog" aria-labelledby="dialog-title">
+      <form id="club-form" method="dialog" class="dialog-body" novalidate>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">MANAGE CLUB</p>
+            <h2 id="dialog-title">Club</h2>
+          </div>
+          <button class="dialog-close" type="button" id="dialog-close" aria-label="Close">×</button>
+        </div>
+
+        <div class="logo-section">
+          <span id="logo-preview" class="logo-preview" aria-hidden="true"></span>
+          <div class="logo-copy">
+            <span class="field-label">Club logo</span>
+            <small>PNG, JPG or WebP · resized to 512 px · shown on the club’s pages</small>
+            <span class="logo-actions">
+              <button class="button button-dark" type="button" id="logo-upload">Upload logo</button>
+              <button class="link-button danger" type="button" id="logo-remove" hidden>Remove</button>
+              <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" tabindex="-1">
+            </span>
+          </div>
+        </div>
+
+        <label class="field">
+          <span class="field-label">Club name</span>
+          <input id="edit-name" class="field-input" type="text" maxlength="80" required>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Status</span>
+            <select id="edit-status" class="field-input">
+              <option value="trial">Trial</option>
+              <option value="active">Active (paid)</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </label>
+          <label class="field">
+            <span class="field-label">Access until</span>
+            <input id="edit-until" class="field-input" type="date">
+          </label>
+        </div>
+        <div class="quick-actions">
+          <button class="filter-chip" type="button" data-extend="1">Mark paid · +1 month</button>
+          <button class="filter-chip" type="button" data-extend="12">Mark paid · +1 year</button>
+          <button class="filter-chip" type="button" id="clear-until">No end date</button>
+        </div>
+        <label class="field">
+          <span class="field-label">Private notes</span>
+          <textarea id="edit-notes" class="field-input" rows="2" placeholder="Contact, pricing, anything to remember"></textarea>
+        </label>
+
+        <div class="dialog-section">
+          <div class="roster-list-heading"><span>CLUB LOGINS</span><span>PASSWORD</span></div>
+          <ul id="admin-list" class="player-list admin-list"></ul>
+          <div class="login-form">
+            <div class="input-wrap">
+              <span class="input-plus" aria-hidden="true">＋</span>
+              <label class="sr-only" for="new-admin-email">Login email</label>
+              <input id="new-admin-email" type="email" placeholder="Login email" autocomplete="off">
+            </div>
+            <div class="input-wrap">
+              <label class="sr-only" for="new-admin-password">Password</label>
+              <input id="new-admin-password" type="text" placeholder="Password (6+ chars)" autocomplete="new-password" spellcheck="false">
+            </div>
+            <button class="button button-dark" type="button" id="add-admin">Add login</button>
+          </div>
+        </div>
+
+        <p id="dialog-feedback" class="form-feedback" aria-live="polite"></p>
+
+        <div class="dialog-footer">
+          <button class="link-button danger" type="button" id="delete-club">Delete club</button>
+          <div class="dialog-footer-actions">
+            <a class="link-button" id="open-board" href="#">Open board →</a>
+            <button class="button button-primary" type="submit" id="save-club">Save changes</button>
+          </div>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f5f6f2">
+    <meta name="description" content="A simple pickleball club dashboard for players, random doubles matches, and results.">
+    <title>OdyZPickle — Pickleball Club Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" defer></script>
+    <script src="config.js" defer></script>
+    <script src="session.js" defer></script>
+    <script src="app.js" defer></script>
+  </head>
+  <body class="choosing-mode">
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="#board" aria-label="OdyZPickle home">
+          <span class="wordmark" aria-hidden="true">Ody<span class="wordmark-z">Z</span>Pickle</span>
+        </a>
+        <nav class="topnav" aria-label="Club pages">
+          <a href="#board" data-view="board" aria-current="page">Board</a>
+          <a href="#history" data-view="history">Game History</a>
+          <a href="#members" data-view="members">Members</a>
+          <a href="#payments" data-view="payments">Payments</a>
+        </nav>
+        <div class="topbar-meta">
+          <span class="save-indicator" id="save-indicator"><span class="save-dot"></span> Saved on this device</span>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <span class="date-label" id="today-label"></span>
+          <span class="topbar-divider" aria-hidden="true" id="owner-divider" hidden></span>
+          <a class="link-button" id="owner-link" href="owner.html" hidden>Owner dashboard</a>
+          <span class="topbar-divider" aria-hidden="true"></span>
+          <button class="link-button" id="sign-out" type="button">Sign out</button>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <section class="page-heading" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow club-eyebrow"><img id="club-logo" class="club-logo" alt="" hidden><span id="club-name" data-sub="CLUB DASHBOARD">YOUR COURTSIDE HQ</span></p>
+            <h1 id="page-title">Club dashboard<span class="heading-period">.</span></h1>
+            <p class="page-subtitle" id="page-subtitle">Get your crew together. We’ll take care of the matchups.</p>
+          </div>
+          <div class="heading-decoration" aria-hidden="true">
+            <span class="decoration-line"></span>
+            <span class="decoration-ball"></span>
+          </div>
+        </section>
+
+        <div id="storage-notice" class="storage-notice" role="alert" hidden></div>
+
+        <div id="session-banner" class="session-banner" hidden>
+          <span class="session-mode">OPEN PLAY</span>
+          <span id="session-summary" class="session-summary"></span>
+          <span class="session-actions">
+            <button id="session-change" class="link-button" type="button">Change</button>
+            <button id="session-finish" class="button button-dark session-finish" type="button">Finish open play</button>
+          </span>
+        </div>
+
+        <div id="board-view">
+        <section class="stats-grid" aria-label="Club stats">
+          <article class="stat-card">
+            <div class="stat-top"><span class="stat-label">PLAYING TODAY</span><span class="stat-icon icon-players" aria-hidden="true">↗</span></div>
+            <div class="stat-value" id="stat-players">0</div>
+            <div class="stat-note" id="stat-players-note">ready to play</div>
+          </article>
+          <article class="stat-card">
+            <div class="stat-top"><span class="stat-label">GAMES THIS OPEN PLAY</span><span class="stat-icon icon-rounds" aria-hidden="true">↻</span></div>
+            <div class="stat-value" id="stat-rounds">0</div>
+            <div class="stat-note">results recorded</div>
+          </article>
+          <article class="stat-card stat-card-highlight">
+            <div class="stat-top"><span class="stat-label">PLAYERS THIS OPEN PLAY</span><span class="stat-icon icon-matches" aria-hidden="true">✳</span></div>
+            <div class="stat-value" id="stat-matches">0</div>
+            <div class="stat-note">have played a game</div>
+          </article>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="panel matches-panel" aria-labelledby="matches-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">LET’S PLAY</p>
+                <h2 id="matches-title">Match board</h2>
+              </div>
+              <span class="round-chip" id="round-chip">NO ROUND YET</span>
+            </div>
+
+            <div class="format-bar" id="format-bar">
+              <span class="format-bar-label" id="format-label">GAME TYPE</span>
+              <div class="format-toggle" role="group" aria-labelledby="format-label">
+                <button class="format-option" type="button" data-format="doubles" aria-pressed="true">Doubles <small>2 v 2</small></button>
+                <button class="format-option" type="button" data-format="singles" aria-pressed="false">Singles <small>1 v 1</small></button>
+              </div>
+              <span id="format-feedback" class="format-feedback" aria-live="polite"></span>
+            </div>
+
+            <div id="round-summary" class="round-summary" hidden>
+              <span class="round-progress" id="round-progress"></span>
+            </div>
+
+            <div id="matches-list" class="matches-list"></div>
+            <div id="round-empty" class="empty-state">
+              <div class="empty-illustration" aria-hidden="true">
+                <span class="empty-court court-one"></span>
+                <span class="empty-court court-two"></span>
+                <span class="empty-ball"></span>
+              </div>
+              <h3>Your next great rally starts here.</h3>
+              <p>Loading your courts…</p>
+            </div>
+          </section>
+
+          <aside class="panel roster-panel" aria-labelledby="roster-title">
+            <div class="panel-heading roster-heading">
+              <div>
+                <p class="eyebrow">THE CREW</p>
+                <h2 id="roster-title">Player roster <span class="roster-count" id="roster-count">0</span></h2>
+              </div>
+              <span class="roster-spark" aria-hidden="true">✳</span>
+            </div>
+            <p class="panel-intro">Who’s playing today. Add players one at a time — pick someone from the club, or type a new name.</p>
+            <form id="add-player-form" class="add-one-form" novalidate>
+              <div class="slot-wrap add-one-name">
+                <label class="sr-only" for="player-input">Player name</label>
+                <div class="input-wrap">
+                  <span class="input-plus" aria-hidden="true">＋</span>
+                  <input id="player-input" type="text" autocomplete="off" spellcheck="false" placeholder="Player name" maxlength="40"
+                    role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="player-suggest">
+                </div>
+                <ul class="suggest-list" id="player-suggest" role="listbox" hidden></ul>
+              </div>
+              <div class="type-toggle" role="group" aria-label="Member or non-member">
+                <button class="type-option" type="button" data-player-type="member" aria-pressed="false">Member</button>
+                <button class="type-option selected" type="button" data-player-type="guest" aria-pressed="true">Non-member</button>
+              </div>
+              <button class="button button-dark" type="submit">Add</button>
+            </form>
+            <p id="roster-feedback" class="form-feedback" aria-live="polite"></p>
+            <div class="presence-bar">
+              <span id="presence-count" class="presence-count"></span>
+              <span class="presence-actions">
+                <button class="link-button" type="button" data-presence-all="in">All in</button>
+                <button class="link-button" type="button" data-presence-all="out">All out</button>
+              </span>
+            </div>
+            <div class="roster-list-heading standings-heading">
+              <button class="sort-head" type="button" data-sort="roster" aria-pressed="true">PLAYERS</button>
+              <button class="sort-head num" type="button" data-sort="doubles" aria-pressed="false" title="Rank by doubles record this open play">DOUBLES <small>TODAY</small></button>
+              <button class="sort-head num" type="button" data-sort="singles" aria-pressed="false" title="Rank by singles record this open play">SINGLES <small>TODAY</small></button>
+            </div>
+            <ul id="player-list" class="player-list" aria-label="Club players"></ul>
+            <div id="roster-empty" class="roster-empty">
+              <span class="roster-empty-mark" aria-hidden="true">＋</span>
+              <span>No one’s here yet. Type names above to add them.</span>
+            </div>
+            <div class="roster-tip"><span aria-hidden="true">✦</span> <span id="roster-tip-text">A doubles match needs 4 players.</span></div>
+
+            <div class="courts-section" aria-labelledby="courts-title">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">YOUR VENUE</p>
+                  <h2 id="courts-title" class="courts-title">Courts <span class="roster-count" id="court-count"></span></h2>
+                </div>
+              </div>
+              <p class="panel-intro">Each court has its own game type. Every round makes one match per court, and players who sat out go first next round.</p>
+              <form id="add-court-form" class="add-player-form">
+                <label class="sr-only" for="court-input">Court names</label>
+                <div class="input-wrap">
+                  <span class="input-plus" aria-hidden="true">＋</span>
+                  <input id="court-input" type="text" autocomplete="off" placeholder="Court name, or leave blank" maxlength="200">
+                </div>
+                <button class="button button-dark" type="submit">Add court</button>
+              </form>
+              <p id="court-feedback" class="form-feedback" aria-live="polite"></p>
+              <ul id="court-list" class="player-list court-list" aria-label="Club courts"></ul>
+              <div id="courts-empty" class="roster-empty courts-empty">
+                <span>No courts set — rounds use as many courts as needed.</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <section class="panel history-panel" aria-labelledby="history-title">
+          <div class="panel-heading history-heading">
+            <div>
+              <p class="eyebrow">THE GOOD STUFF</p>
+              <h2 id="history-title">This open play</h2>
+            </div>
+            <span class="history-note">Each court’s games, newest first · past days are in <a href="#history">Game History</a></span>
+          </div>
+          <div id="history-list" class="history-list"></div>
+          <div id="history-empty" class="history-empty">No games yet this open play. Results show up here as courts finish.</div>
+        </section>
+
+        <section class="panel history-panel log-panel" aria-labelledby="log-title">
+          <div class="panel-heading history-heading">
+            <div>
+              <p class="eyebrow">EVERY MOVE, SAVED</p>
+              <h2 id="log-title">Game log</h2>
+            </div>
+            <span class="history-note">This open play’s changes, newest first</span>
+          </div>
+          <ol id="log-list" class="log-list"></ol>
+          <div id="log-empty" class="history-empty">Every player, round and result will be logged here.</div>
+          <button id="log-more" class="link-button log-more" type="button" hidden>Show older entries</button>
+        </section>
+
+        </div>
+
+        <!-- Game History: results grouped by open play date. -->
+        <section id="history-view" class="view" aria-label="Game history" hidden>
+          <div class="panel date-filter" role="group" aria-label="Filter games by date">
+            <span class="date-filter-label">Dates</span>
+            <label class="date-field"><span class="sr-only">From</span><input id="history-from" class="field-input" type="date" aria-label="From date"></label>
+            <span class="date-filter-to" aria-hidden="true">to</span>
+            <label class="date-field"><span class="sr-only">To</span><input id="history-to" class="field-input" type="date" aria-label="To date"></label>
+            <div class="filter-chips date-presets">
+              <button class="filter-chip" type="button" data-date-preset="all">All dates</button>
+              <button class="filter-chip" type="button" data-date-preset="today">Today</button>
+              <button class="filter-chip" type="button" data-date-preset="week">Last 7 days</button>
+              <button class="filter-chip" type="button" data-date-preset="month">This month</button>
+            </div>
+          </div>
+          <div class="view-toolbar">
+            <div class="history-summary" id="history-summary"></div>
+          </div>
+          <div id="history-days" class="history-days"></div>
+          <div id="history-days-empty" class="panel empty-panel" hidden>No games recorded yet. Results show up here once courts start playing.</div>
+        </section>
+
+        <!-- Members: everyone on the club roster with their records. -->
+        <section id="members-view" class="view" aria-label="Members" hidden>
+          <form id="add-member-form" class="panel add-member-panel" novalidate>
+            <div class="add-member-intro">
+              <p class="eyebrow" id="member-form-title">NEW MEMBER</p>
+              <p class="add-member-hint">Saved to the club, not timed in — time them in on the Board when they come to play.</p>
+            </div>
+            <div class="member-fields">
+              <label class="field">
+                <span class="field-label">Name</span>
+                <input id="member-input" class="field-input" type="text" autocomplete="off" maxlength="40" required placeholder="Full name">
+              </label>
+              <label class="field">
+                <span class="field-label">Address <small class="optional">optional</small></span>
+                <input id="member-address" class="field-input" type="text" autocomplete="off" maxlength="160" placeholder="Angono, Rizal">
+              </label>
+              <label class="field">
+                <span class="field-label">Contact number <small class="optional">optional</small></span>
+                <input id="member-contact" class="field-input" type="tel" autocomplete="off" maxlength="20" placeholder="09XX XXX XXXX">
+              </label>
+              <div class="member-actions">
+                <button class="link-button" type="button" id="member-cancel-edit" hidden>Cancel</button>
+                <button class="button button-dark" type="submit" id="member-submit">Add member</button>
+              </div>
+            </div>
+            <p id="member-feedback" class="form-feedback" aria-live="polite"></p>
+          </form>
+
+          <div class="view-toolbar">
+            <div class="input-wrap search-wrap members-search">
+              <span class="input-plus" aria-hidden="true">⌕</span>
+              <label class="sr-only" for="member-search">Search members</label>
+              <input id="member-search" type="search" placeholder="Search members" autocomplete="off">
+            </div>
+            <div class="filter-chips" role="group" aria-label="Show members or guests">
+              <button class="filter-chip selected" type="button" data-member-filter="members" aria-pressed="true">Members <span id="members-tab-count"></span></button>
+              <button class="filter-chip" type="button" data-member-filter="guests" aria-pressed="false">Guests <span id="guests-tab-count"></span></button>
+            </div>
+          </div>
+          <div class="panel members-panel">
+            <div class="members-table" role="table" aria-label="Club members">
+              <div class="members-row members-head" role="row">
+                <button class="sort-head" type="button" role="columnheader" data-member-sort="name">MEMBER</button>
+                <span role="columnheader">CONTACT</span>
+                <span role="columnheader" id="members-second-head">MEMBER SINCE</span>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="doubles">DOUBLES</button>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="singles">SINGLES</button>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="games">GAMES</button>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="rate">WIN %</button>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="paid">PAID</button>
+                <button class="sort-head num" type="button" role="columnheader" data-member-sort="last">LAST PLAYED</button>
+              </div>
+              <div id="members-body" role="rowgroup"></div>
+            </div>
+            <div id="members-empty" class="history-empty" hidden></div>
+            <nav id="members-pager" class="pager" aria-label="Members pages" hidden></nav>
+          </div>
+        </section>
+
+        <!-- Payments: who paid, how, and who still owes — across open plays. -->
+        <section id="payments-view" class="view" aria-label="Payments" hidden>
+          <div class="panel date-filter" role="group" aria-label="Filter payments">
+            <span class="date-filter-label">Dates</span>
+            <label class="date-field"><span class="sr-only">From</span><input id="pay-from" class="field-input" type="date" aria-label="From date"></label>
+            <span class="date-filter-to" aria-hidden="true">to</span>
+            <label class="date-field"><span class="sr-only">To</span><input id="pay-to" class="field-input" type="date" aria-label="To date"></label>
+            <div class="filter-chips date-presets">
+              <button class="filter-chip" type="button" data-pay-preset="all">All dates</button>
+              <button class="filter-chip" type="button" data-pay-preset="today">Today</button>
+              <button class="filter-chip" type="button" data-pay-preset="week">Last 7 days</button>
+              <button class="filter-chip" type="button" data-pay-preset="month">This month</button>
+            </div>
+          </div>
+          <div class="view-toolbar">
+            <div class="input-wrap search-wrap members-search">
+              <span class="input-plus" aria-hidden="true">⌕</span>
+              <label class="sr-only" for="pay-search">Search by name</label>
+              <input id="pay-search" type="search" placeholder="Search by name" autocomplete="off">
+            </div>
+            <div class="filter-chips" role="group" aria-label="Payment method">
+              <button class="filter-chip selected" type="button" data-pay-filter="all" aria-pressed="true">All methods</button>
+              <button class="filter-chip" type="button" data-pay-filter="cash" aria-pressed="false">Cash</button>
+              <button class="filter-chip" type="button" data-pay-filter="gcash" aria-pressed="false">GCash</button>
+              <button class="filter-chip" type="button" data-pay-filter="maya" aria-pressed="false">Maya</button>
+              <button class="filter-chip" type="button" data-pay-filter="bank" aria-pressed="false">Bank transfer</button>
+            </div>
+          </div>
+
+          <section class="stats-grid stats-grid-4 pay-stats" aria-label="Payment totals">
+            <article class="stat-card stat-card-highlight">
+              <div class="stat-top"><span class="stat-label">COLLECTED</span><span class="stat-icon icon-matches" aria-hidden="true">₱</span></div>
+              <div class="stat-value" id="pay-collected">₱0</div>
+              <div class="stat-note" id="pay-collected-note">no payments yet</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">PAYMENTS</span><span class="stat-icon icon-players" aria-hidden="true">✓</span></div>
+              <div class="stat-value" id="pay-count">0</div>
+              <div class="stat-note" id="pay-count-note">players paid</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">STILL UNPAID</span><span class="stat-icon icon-attention" aria-hidden="true">!</span></div>
+              <div class="stat-value" id="pay-unpaid">0</div>
+              <div class="stat-note" id="pay-unpaid-note">everyone’s paid</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-label">BY METHOD</span><span class="stat-icon icon-rounds" aria-hidden="true">≡</span></div>
+              <div class="pay-methods" id="pay-methods"></div>
+            </article>
+          </section>
+
+          <section class="panel pay-panel" id="unpaid-panel" aria-labelledby="unpaid-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">TO COLLECT</p>
+                <h2 id="unpaid-title">Unpaid <span class="roster-count" id="unpaid-count"></span></h2>
+              </div>
+              <span class="history-note">Mark a late payment when they settle up</span>
+            </div>
+            <div id="unpaid-list" class="pay-table"></div>
+            <div id="unpaid-empty" class="history-empty" hidden>No one owes anything for these dates. 🎉</div>
+          </section>
+
+          <section class="panel pay-panel" aria-labelledby="payments-title">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">RECEIVED</p>
+                <h2 id="payments-title">All payments <span class="roster-count" id="payments-count"></span></h2>
+              </div>
+            </div>
+            <div class="pay-row pay-head" aria-hidden="true">
+              <span>DATE</span><span>PLAYER</span><span>OPEN PLAY</span><span>METHOD</span><span class="num">AMOUNT</span>
+            </div>
+            <div id="payments-list" class="pay-table"></div>
+            <div id="payments-empty" class="history-empty" hidden>No payments match these filters.</div>
+          </section>
+        </section>
+
+        <footer class="page-footer">
+          <span>GOOD GAMES. GOOD PEOPLE.</span>
+          <span>ODYZPICKLE <span class="footer-ball" aria-hidden="true">●</span></span>
+        </footer>
+        <a class="developed-by" href="https://odyzee.site/" target="_blank" rel="noopener noreferrer" aria-label="Developed by OdyZee (opens odyzee.site)">
+          <span>Developed by:</span>
+          <span class="odyzee-badge">Ody<span class="odyzee-z">Z</span>ee</span>
+        </a>
+      </main>
+    </div>
+
+    <!-- First screen after signing in: pick how the club is playing today. -->
+    <section id="mode-picker" class="mode-picker" aria-labelledby="mode-title">
+      <div class="mode-picker-inner">
+        <p class="eyebrow club-eyebrow"><img id="mode-club-logo" class="club-logo club-logo-large" alt="" hidden><span id="mode-club" data-sub="WELCOME BACK">YOUR CLUB</span></p>
+        <h1 id="mode-title">How are you playing today<span class="heading-period">?</span></h1>
+        <p class="page-subtitle">Pick a format to set up your courts.</p>
+        <div id="running-session" class="running-session" hidden>
+          <div class="running-copy">
+            <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> OPEN PLAY IN PROGRESS</p>
+            <strong id="running-title">Open play</strong>
+            <span id="running-detail"></span>
+          </div>
+          <div class="running-actions">
+            <button id="running-finish" class="link-button" type="button">Finish open play</button>
+            <button id="running-continue" class="button button-primary" type="button">Continue →</button>
+          </div>
+        </div>
+        <div class="mode-cards">
+          <button class="mode-card" type="button" id="choose-open-play" disabled>
+            <span class="mode-icon" aria-hidden="true">⤨</span>
+            <strong>Open Play</strong>
+            <span>Drop-in games. Players rotate onto open courts as games finish.</span>
+            <small id="open-play-hint">Loading your club…</small>
+          </button>
+          <button class="mode-card" type="button" disabled aria-describedby="tournament-soon">
+            <span class="mode-icon" aria-hidden="true">🏆</span>
+            <strong>Tournament <span class="soon-tag" id="tournament-soon">Coming soon</span></strong>
+            <span>Brackets and pools with a champion at the end.</span>
+          </button>
+        </div>
+        <div class="mode-links">
+          <a class="mode-link" href="#history" data-go-view="history">
+            <span class="mode-link-icon" aria-hidden="true">↻</span>
+            <span><strong>Game History</strong><small id="mode-history-hint">Past open plays, court by court</small></span>
+            <span class="mode-link-arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="mode-link" href="#members" data-go-view="members">
+            <span class="mode-link-icon" aria-hidden="true">↗</span>
+            <span><strong>Members</strong><small id="mode-members-hint">Everyone in your club</small></span>
+            <span class="mode-link-arrow" aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <dialog id="session-dialog" class="club-dialog" aria-labelledby="session-title">
+      <form id="session-form" class="dialog-body" novalidate>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">OPEN PLAY</p>
+            <h2 id="session-title">Set up today’s courts</h2>
+          </div>
+          <button class="dialog-close" type="button" id="session-close" aria-label="Back to format choice">×</button>
+        </div>
+
+        <div class="field">
+          <span class="field-label" id="session-format-label">Court played</span>
+          <div class="format-toggle session-format" role="group" aria-labelledby="session-format-label">
+            <button class="format-option" type="button" data-session-format="doubles" aria-pressed="true">Doubles <small>2 v 2</small></button>
+            <button class="format-option" type="button" data-session-format="singles" aria-pressed="false">Singles <small>1 v 1</small></button>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label" for="session-courts">Court count</label>
+            <div class="stepper">
+              <button type="button" class="stepper-button" data-step="-1" aria-label="One fewer court">−</button>
+              <input id="session-courts" class="field-input stepper-input" type="number" min="1" max="20" value="2" inputmode="numeric">
+              <button type="button" class="stepper-button" data-step="1" aria-label="One more court">＋</button>
+            </div>
+          </div>
+          <label class="field">
+            <span class="field-label">Open play date</span>
+            <input id="session-date" class="field-input" type="date" required>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field-label">Venue name</span>
+          <input id="session-venue" class="field-input" type="text" maxlength="80" placeholder="e.g. Sunset Sports Center" autocomplete="off" required>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field-label">Member fee <small class="optional">per head · optional</small></span>
+            <span class="money-input">
+              <span class="money-symbol" aria-hidden="true">₱</span>
+              <input id="session-fee-member" class="field-input" type="number" min="0" step="1" inputmode="decimal" placeholder="0 — free" aria-label="Member fee per head in pesos">
+            </span>
+          </label>
+          <label class="field">
+            <span class="field-label">Non-member fee <small class="optional">per head · optional</small></span>
+            <span class="money-input">
+              <span class="money-symbol" aria-hidden="true">₱</span>
+              <input id="session-fee-guest" class="field-input" type="number" min="0" step="1" inputmode="decimal" placeholder="0 — free" aria-label="Non-member fee per head in pesos">
+            </span>
+          </label>
+        </div>
+        <div class="fee-default">
+          <label class="check-field">
+            <input id="session-fee-default" type="checkbox">
+            <span>Save as the club’s default fees</span>
+          </label>
+          <span id="session-fee-hint" class="fee-hint"></span>
+        </div>
+
+        <div class="field">
+          <span class="field-label" id="session-time-label">Time schedule</span>
+          <div class="time-range" role="group" aria-labelledby="session-time-label">
+            <input id="session-start" class="field-input" type="time" aria-label="Start time" required>
+            <span class="time-range-to" aria-hidden="true">to</span>
+            <input id="session-end" class="field-input" type="time" aria-label="End time" required>
+          </div>
+        </div>
+
+        <p id="session-note" class="pick-hint"></p>
+        <p id="session-feedback" class="form-feedback" aria-live="polite"></p>
+
+        <div class="dialog-footer">
+          <button class="link-button" type="button" id="session-back">Back</button>
+          <button class="button button-primary" type="submit" id="session-submit">Start open play →</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- Styled confirmation (replaces the browser's plain confirm box). -->
+    <dialog id="confirm-dialog" class="club-dialog confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-body">
+      <form method="dialog" class="dialog-body">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" id="confirm-eyebrow"></p>
+            <h2 id="confirm-title"></h2>
+          </div>
+          <button class="dialog-close" value="cancel" aria-label="Cancel">×</button>
+        </div>
+        <div id="confirm-body" class="confirm-body"></div>
+        <div class="dialog-footer confirm-footer">
+          <button class="link-button" value="cancel" id="confirm-cancel">Cancel</button>
+          <button class="button button-danger" value="confirm" id="confirm-ok">Confirm</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="match-dialog" class="club-dialog" aria-labelledby="match-dialog-title">
+      <form id="match-dialog-form" class="dialog-body" novalidate>
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow" id="match-dialog-format">DOUBLES</p>
+            <h2 id="match-dialog-title">Pick players</h2>
+          </div>
+          <button class="dialog-close" type="button" id="match-dialog-close" aria-label="Close">×</button>
+        </div>
+        <p class="panel-intro" id="match-dialog-note"></p>
+
+        <label class="field">
+          <span class="field-label">Court</span>
+          <input id="match-court" class="field-input" type="text" list="court-options" maxlength="40" autocomplete="off">
+        </label>
+
+        <div class="pick-teams">
+          <fieldset class="pick-team">
+            <legend class="field-label">Team A</legend>
+            <div id="team-a-inputs" class="slot-list"></div>
+          </fieldset>
+          <span class="versus pick-versus">VS</span>
+          <fieldset class="pick-team">
+            <legend class="field-label">Team B</legend>
+            <div id="team-b-inputs" class="slot-list"></div>
+          </fieldset>
+        </div>
+        <p class="pick-hint">Start typing to pick from your roster. To use someone new, add them to the roster first.</p>
+
+        <p id="match-dialog-feedback" class="form-feedback" aria-live="polite"></p>
+
+        <div class="dialog-footer">
+          <button class="link-button" type="button" id="match-dialog-cancel">Cancel</button>
+          <button class="button button-primary" type="submit">Save match</button>
+        </div>
+      </form>
+    </dialog>
+    <datalist id="court-options"></datalist>
+  </body>
+</html>
