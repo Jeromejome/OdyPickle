@@ -1,0 +1,5 @@
+# Local-only files: keep them out of Vercel deployments.
+server.js
+.env
+.env.*
+supabase
